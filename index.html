@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Pokédex 3D • Card Grid & Detailed Engine</title>
+
+  <!-- Tailwind CSS CDN for instant styling support -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              dark: '#050813',
+              card: 'rgba(13, 20, 36, 0.75)',
+              border: 'rgba(56, 189, 248, 0.2)',
+              cyan: '#38bdf8',
+              accent: '#818cf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#050813] text-slate-100 min-h-screen w-screen overflow-x-hidden flex flex-col font-sans select-none bg-grid">
+  <!-- Subtle CRT Scanlines -->
+  <div class="scanlines"></div>
+
+  <!-- Evolution Flash Burst Overlay -->
+  <div id="evolution-flash" class="fixed inset-0 bg-gradient-to-tr from-sky-400 via-white to-indigo-300 pointer-events-none z-50 opacity-0"></div>
+
+  <!-- TOP NAVIGATION BAR -->
+  <div id="navbar-container" class="sticky top-0 z-40">
+    <!-- Injected by TopNavbar.js -->
+  </div>
+
+  <!-- MAIN CONTENT: POKÉMON CARDS GRID -->
+  <main class="flex-1 w-full overflow-y-auto relative z-10">
+    <div id="pokemon-grid-container">
+      <!-- Injected by PokemonCardGrid.js -->
+    </div>
+  </main>
+
+  <!-- DETAILED VIEW MODAL / INSPECTION DIALOG -->
+  <div id="detail-modal-container">
+    <!-- Injected by DetailModal.js -->
+  </div>
+
+  <!-- Hidden Three.js Canvas Pool Holder -->
+  <div id="offscreen-three-container" class="hidden"></div>
+
+  <!-- Application Entry Script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
