@@ -4,6 +4,7 @@ import { EvolutionTree } from './EvolutionTree.js';
 import { GenerationSpriteArchive } from './GenerationSpriteArchive.js';
 import { DetailsPanel } from './DetailsPanel.js';
 import { ImageViewport } from './ImageViewport.js';
+import { pokeApiClient } from '../services/PokeApiClient.js';
 
 export class DetailModal {
   constructor(container, sceneManager, onSelectPokemon) {
@@ -13,6 +14,9 @@ export class DetailModal {
 
     this.isOpen = false;
     this.pokemon = null;
+    this.basePokemon = null;
+    this.currentData = null;
+    this.activeVariety = null;
     this.viewMode = 'image'; // 'image' | '3d'
 
     // Sub-components inside modal
@@ -26,6 +30,9 @@ export class DetailModal {
 
   open(pokemon) {
     this.pokemon = pokemon;
+    this.basePokemon = pokemon;
+    this.currentData = { ...pokemon };
+    this.activeVariety = (pokemon.varieties && pokemon.varieties.find(v => v.isDefault)) || (pokemon.varieties && pokemon.varieties[0]) || null;
     this.isOpen = true;
     this.viewMode = 'image'; // Start in 2D image view by default
 
@@ -50,6 +57,62 @@ export class DetailModal {
     const threeContainer = this.container.querySelector('#modal-3d-viewport');
     if (threeContainer && this.sceneManager.renderer.domElement.parentElement === threeContainer) {
       threeContainer.innerHTML = '';
+    }
+  }
+
+  async switchForm(variety) {
+    if (!variety || !this.pokemon) return;
+
+    if (variety.isDefault) {
+      this.activeVariety = variety;
+      this.currentData = { ...this.basePokemon };
+      if (this.imageViewport) {
+        this.imageViewport.setActiveVariety(variety, this.basePokemon.sprites);
+      }
+      this.renderHeader();
+      if (this.detailsPanel) {
+        this.detailsPanel.update(this.currentData);
+      }
+      return;
+    }
+
+    // Alternative form selected (Mega, G-Max, Regional)
+    if (this.imageViewport) {
+      this.imageViewport.setLoadingForm(true);
+    }
+
+    try {
+      const formDetails = await pokeApiClient.getFormDetails(variety);
+      if (this.imageViewport) {
+        this.imageViewport.setLoadingForm(false);
+      }
+      if (!formDetails) return;
+
+      this.activeVariety = variety;
+      this.currentData = {
+        ...this.basePokemon,
+        name: formDetails.name || variety.name,
+        formShortName: variety.shortName,
+        formTypeBadge: variety.typeBadge,
+        types: formDetails.types && formDetails.types.length > 0 ? formDetails.types : this.basePokemon.types,
+        stats: formDetails.stats || this.basePokemon.stats,
+        height: formDetails.height || this.basePokemon.height,
+        weight: formDetails.weight || this.basePokemon.weight,
+        sprites: formDetails.sprites || this.basePokemon.sprites
+      };
+
+      if (this.imageViewport) {
+        this.imageViewport.setActiveVariety(variety, formDetails.sprites);
+      }
+      this.renderHeader();
+      if (this.detailsPanel) {
+        this.detailsPanel.update(this.currentData);
+      }
+    } catch (e) {
+      console.error('Failed to load alternative form details:', e);
+      if (this.imageViewport) {
+        this.imageViewport.setLoadingForm(false);
+      }
     }
   }
 
@@ -83,7 +146,7 @@ export class DetailModal {
       if (!this.detailsPanel) {
         this.detailsPanel = new DetailsPanel(detailsContainer);
       }
-      this.detailsPanel.update(this.pokemon);
+      this.detailsPanel.update(this.currentData || this.pokemon);
     }
   }
 
@@ -152,7 +215,7 @@ export class DetailModal {
               <!-- GenerationSpriteArchive will render here -->
             </div>
 
-            <!-- Bottom Section: Base Telemetry Stats, Lore & Moves -->
+            <!-- Bottom Section: Base Telemetry Stats, Type Effectiveness & Lore -->
             <div id="modal-details-container">
               <!-- DetailsPanel will render here -->
             </div>
@@ -168,11 +231,17 @@ export class DetailModal {
     const container = this.container.querySelector('#modal-header-container');
     if (!container || !this.pokemon) return;
 
-    const p = this.pokemon;
+    const p = this.currentData || this.pokemon;
+    const isAltForm = this.activeVariety && !this.activeVariety.isDefault;
+
     const typeBadges = p.types.map(t => {
       const info = TYPE_COLORS[t] || { badge: 'bg-slate-700 text-slate-200 border-slate-600' };
       return `<span class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold border ${info.badge}">${t.toUpperCase()}</span>`;
     }).join(' ');
+
+    const formBadge = isAltForm 
+      ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-purple-500/25 text-purple-200 border border-purple-400/50 animate-pulse">${this.activeVariety.typeBadge}</span>`
+      : '';
 
     container.innerHTML = `
       <!-- Left Info -->
@@ -181,14 +250,15 @@ export class DetailModal {
           <img src="${p.sprites?.pixelFront || p.sprites?.officialArtwork}" alt="${p.name}" class="max-w-full max-h-full object-contain" />
         </div>
         <div>
-          <div class="flex items-center space-x-2.5">
-            <span class="font-mono text-sm text-sky-400 font-bold">#${p.id}</span>
+          <div class="flex items-center space-x-2.5 flex-wrap gap-y-1">
+            <span class="font-mono text-sm text-sky-400 font-bold">#${this.pokemon.id}</span>
             <h2 class="font-tech text-xl font-bold tracking-wider text-white">${p.name.toUpperCase()}</h2>
-            <div class="flex items-center space-x-1.5 ml-2">
+            ${formBadge}
+            <div class="flex items-center space-x-1.5 ml-1">
               ${typeBadges}
             </div>
           </div>
-          <p class="text-xs font-mono text-slate-400 mt-0.5">${p.japaneseName || ''} • ${p.genus || 'Pokémon'} • ${p.generation?.name || 'GEN I'}</p>
+          <p class="text-xs font-mono text-slate-400 mt-0.5">${this.pokemon.japaneseName || ''} • ${this.pokemon.genus || 'Pokémon'} • ${this.pokemon.generation?.name || 'GEN I'} • ${p.height} • ${p.weight}</p>
         </div>
       </div>
 
@@ -258,11 +328,13 @@ export class DetailModal {
 
     // Initialize ImageViewport
     if (!this.imageViewport) {
-      this.imageViewport = new ImageViewport(imgContainer, () => {
-        this.setStageMode('3d');
-      });
+      this.imageViewport = new ImageViewport(
+        imgContainer, 
+        () => this.setStageMode('3d'),
+        (variety) => this.switchForm(variety)
+      );
     }
-    this.imageViewport.update(this.pokemon);
+    this.imageViewport.update(this.pokemon, this.activeVariety, this.currentData ? this.currentData.sprites : this.pokemon.sprites);
 
     // Switch buttons
     btnImg.onclick = () => {

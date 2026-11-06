@@ -3,15 +3,156 @@
  */
 
 export const TYPE_COLORS = {
-  Electric: { bg: '#eab308', text: '#000000', glow: '#fde047', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+  Normal: { bg: '#94a3b8', text: '#000000', glow: '#cbd5e1', badge: 'bg-slate-500/20 text-slate-300 border-slate-500/40' },
   Fire: { bg: '#ef4444', text: '#ffffff', glow: '#f87171', badge: 'bg-red-500/20 text-red-300 border-red-500/40' },
   Water: { bg: '#0284c7', text: '#ffffff', glow: '#38bdf8', badge: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
   Grass: { bg: '#22c55e', text: '#ffffff', glow: '#4ade80', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  Electric: { bg: '#eab308', text: '#000000', glow: '#fde047', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+  Ice: { bg: '#06b6d4', text: '#ffffff', glow: '#67e8f9', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+  Fighting: { bg: '#dc2626', text: '#ffffff', glow: '#f87171', badge: 'bg-rose-700/20 text-rose-300 border-rose-600/40' },
   Poison: { bg: '#a855f7', text: '#ffffff', glow: '#c084fc', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  Ground: { bg: '#d97706', text: '#ffffff', glow: '#fbbf24', badge: 'bg-amber-600/20 text-amber-300 border-amber-600/40' },
   Flying: { bg: '#818cf8', text: '#ffffff', glow: '#a5b4fc', badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' },
+  Psychic: { bg: '#ec4899', text: '#ffffff', glow: '#f472b6', badge: 'bg-pink-500/20 text-pink-300 border-pink-500/40' },
+  Bug: { bg: '#84cc16', text: '#000000', glow: '#a3e635', badge: 'bg-lime-500/20 text-lime-300 border-lime-500/40' },
+  Rock: { bg: '#78716c', text: '#ffffff', glow: '#a8a29e', badge: 'bg-stone-500/20 text-stone-300 border-stone-500/40' },
   Ghost: { bg: '#7e22ce', text: '#ffffff', glow: '#a855f7', badge: 'bg-purple-700/20 text-purple-300 border-purple-600/40' },
-  Normal: { bg: '#94a3b8', text: '#000000', glow: '#cbd5e1', badge: 'bg-slate-500/20 text-slate-300 border-slate-500/40' }
+  Dragon: { bg: '#6366f1', text: '#ffffff', glow: '#818cf8', badge: 'bg-indigo-600/20 text-indigo-200 border-indigo-500/40' },
+  Steel: { bg: '#64748b', text: '#ffffff', glow: '#94a3b8', badge: 'bg-slate-400/20 text-slate-200 border-slate-400/40' },
+  Dark: { bg: '#334155', text: '#ffffff', glow: '#475569', badge: 'bg-zinc-700/30 text-zinc-300 border-zinc-600/40' },
+  Fairy: { bg: '#f43f5e', text: '#ffffff', glow: '#fb7185', badge: 'bg-rose-400/20 text-rose-300 border-rose-400/40' }
 };
+
+export const ALL_POKEMON_TYPES = [
+  'Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 
+  'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 
+  'Rock', 'Ghost', 'Dragon', 'Steel', 'Dark', 'Fairy'
+];
+
+/**
+ * Standard Pokémon Defensive Type Effectiveness Matrix (Generation 6+ with Fairy)
+ * Multiplier indicates damage received by defender when hit by attacking type.
+ */
+export const TYPE_DEFENSE_CHART = {
+  Normal: { Fighting: 2, Ghost: 0 },
+  Fire: { Water: 2, Ground: 2, Rock: 2, Fire: 0.5, Grass: 0.5, Ice: 0.5, Bug: 0.5, Steel: 0.5, Fairy: 0.5 },
+  Water: { Electric: 2, Grass: 2, Fire: 0.5, Water: 0.5, Ice: 0.5, Steel: 0.5 },
+  Grass: { Fire: 2, Ice: 2, Poison: 2, Flying: 2, Bug: 2, Water: 0.5, Electric: 0.5, Grass: 0.5, Ground: 0.5 },
+  Electric: { Ground: 2, Electric: 0.5, Flying: 0.5, Steel: 0.5 },
+  Ice: { Fire: 2, Fighting: 2, Rock: 2, Steel: 2, Ice: 0.5 },
+  Fighting: { Flying: 2, Psychic: 2, Fairy: 2, Bug: 0.5, Rock: 0.5, Dark: 0.5 },
+  Poison: { Ground: 2, Psychic: 2, Grass: 0.5, Fighting: 0.5, Poison: 0.5, Bug: 0.5, Fairy: 0.5 },
+  Ground: { Water: 2, Grass: 2, Ice: 2, Poison: 0.5, Rock: 0.5, Electric: 0 },
+  Flying: { Electric: 2, Ice: 2, Rock: 2, Grass: 0.5, Fighting: 0.5, Bug: 0.5, Ground: 0 },
+  Psychic: { Bug: 2, Ghost: 2, Dark: 2, Fighting: 0.5, Psychic: 0.5 },
+  Bug: { Fire: 2, Flying: 2, Rock: 2, Grass: 0.5, Fighting: 0.5, Ground: 0.5 },
+  Rock: { Water: 2, Grass: 2, Fighting: 2, Ground: 2, Steel: 2, Normal: 0.5, Fire: 0.5, Poison: 0.5, Flying: 0.5 },
+  Ghost: { Ghost: 2, Dark: 2, Poison: 0.5, Bug: 0.5, Normal: 0, Fighting: 0 },
+  Dragon: { Ice: 2, Dragon: 2, Fairy: 2, Fire: 0.5, Water: 0.5, Grass: 0.5, Electric: 0.5 },
+  Steel: { Fire: 2, Fighting: 2, Ground: 2, Normal: 0.5, Grass: 0.5, Ice: 0.5, Flying: 0.5, Psychic: 0.5, Bug: 0.5, Rock: 0.5, Dragon: 0.5, Steel: 0.5, Fairy: 0.5, Poison: 0 },
+  Dark: { Fighting: 2, Bug: 2, Fairy: 2, Ghost: 0.5, Dark: 0.5, Psychic: 0 },
+  Fairy: { Poison: 2, Steel: 2, Fighting: 0.5, Bug: 0.5, Dark: 0.5, Dragon: 0 }
+};
+
+/**
+ * Calculates complete defensive damage multipliers for a Pokémon's typing
+ */
+export function calculateTypeEffectiveness(types = []) {
+  const normalizedTypes = types.map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+  const multipliers = {};
+
+  ALL_POKEMON_TYPES.forEach(attackingType => {
+    let mult = 1;
+    normalizedTypes.forEach(defendingType => {
+      const chart = TYPE_DEFENSE_CHART[defendingType] || {};
+      if (chart[attackingType] !== undefined) {
+        mult *= chart[attackingType];
+      }
+    });
+    multipliers[attackingType] = mult;
+  });
+
+  const weaknesses4x = [];
+  const weaknesses2x = [];
+  const neutral1x = [];
+  const resistancesHalf = [];
+  const resistancesQuarter = [];
+  const immunities = [];
+
+  ALL_POKEMON_TYPES.forEach(t => {
+    const val = multipliers[t];
+    if (val === 4) weaknesses4x.push(t);
+    else if (val === 2) weaknesses2x.push(t);
+    else if (val === 1) neutral1x.push(t);
+    else if (val === 0.5) resistancesHalf.push(t);
+    else if (val === 0.25) resistancesQuarter.push(t);
+    else if (val === 0) immunities.push(t);
+  });
+
+  return {
+    multipliers,
+    weaknesses4x,
+    weaknesses2x,
+    neutral1x,
+    resistancesHalf,
+    resistancesQuarter,
+    immunities
+  };
+}
+
+/**
+ * Color-codes base stats based on value strength:
+ * - >= 140: Super High / Elite (Cyan / Sky)
+ * - >= 110: High (Green / Emerald)
+ * - >= 80: Good / Above Average (Lime / Mint)
+ * - >= 60: Average / Moderate (Amber / Orange)
+ * - < 60: Low (Red / Crimson)
+ */
+export function getStatRating(value) {
+  if (value >= 140) {
+    return {
+      tier: 'SUPERB',
+      barGradient: 'from-cyan-400 to-sky-400',
+      textColor: 'text-cyan-300',
+      glowShadow: 'shadow-[0_0_12px_rgba(34,211,238,0.45)]',
+      badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40'
+    };
+  }
+  if (value >= 110) {
+    return {
+      tier: 'HIGH',
+      barGradient: 'from-emerald-500 to-green-400',
+      textColor: 'text-emerald-300',
+      glowShadow: 'shadow-[0_0_10px_rgba(52,211,153,0.35)]',
+      badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    };
+  }
+  if (value >= 80) {
+    return {
+      tier: 'GOOD',
+      barGradient: 'from-lime-400 to-emerald-400',
+      textColor: 'text-lime-300',
+      glowShadow: 'shadow-[0_0_8px_rgba(163,230,53,0.25)]',
+      badge: 'bg-lime-500/20 text-lime-300 border-lime-500/40'
+    };
+  }
+  if (value >= 60) {
+    return {
+      tier: 'AVG',
+      barGradient: 'from-amber-400 to-yellow-400',
+      textColor: 'text-amber-300',
+      glowShadow: 'shadow-[0_0_6px_rgba(251,191,36,0.2)]',
+      badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+    };
+  }
+  return {
+    tier: 'LOW',
+    barGradient: 'from-rose-600 to-red-500',
+    textColor: 'text-rose-400',
+    glowShadow: 'shadow-[0_0_6px_rgba(244,63,94,0.25)]',
+    badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+  };
+}
 
 export const POKEMON_ROSTER = [
   // --- BULBASAUR LINE ---

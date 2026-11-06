@@ -152,7 +152,7 @@ class PokeApiClient {
     // Determine generation
     const genObj = GENERATIONS.find(g => numId >= g.range[0] && numId <= g.range[1]) || GENERATIONS[0];
 
-    // Fetch Species Information (Lore, Japanese name, Evolution chain)
+    // Fetch Species Information (Lore, Japanese name, Evolution chain, Varieties)
     const species = await this.getSpeciesDetails(raw.species.url);
 
     return {
@@ -172,16 +172,18 @@ class PokeApiClient {
       has3D: has3DModel(numId),
       modelKey: raw.name.toLowerCase(),
       evolutionChainUrl: species.evolutionChainUrl,
-      generation: genObj
+      generation: genObj,
+      varieties: species.varieties || [],
+      activeVariety: (species.varieties && species.varieties.find(v => v.isDefault)) || (species.varieties && species.varieties[0]) || null
     };
   }
 
   /**
-   * Fetch Species details for lore, Japanese name & evolution chain
+   * Fetch Species details for lore, Japanese name, evolution chain & alternative varieties
    */
   async getSpeciesDetails(speciesUrl) {
     if (!speciesUrl) {
-      return { japaneseName: '', genus: 'Pokémon', description: 'No telemetry lore available.', evolutionChainUrl: null };
+      return { japaneseName: '', genus: 'Pokémon', description: 'No telemetry lore available.', evolutionChainUrl: null, varieties: [] };
     }
 
     try {
@@ -202,16 +204,182 @@ class PokeApiClient {
         : 'A fascinating Pokémon discovered in the wilderness.';
       const description = rawText.replace(/[\n\f\r]/g, ' ');
 
+      // Alternative Forms & Varieties (Mega, Gigantamax, Regional Forms)
+      const varieties = this.parseVarieties(data.varieties, data.name);
+
       return {
         japaneseName,
         genus,
         description,
-        evolutionChainUrl: data.evolution_chain?.url || null
+        evolutionChainUrl: data.evolution_chain?.url || null,
+        varieties
       };
     } catch (e) {
       console.warn('Species fetch error:', e);
-      return { japaneseName: '', genus: 'Pokémon', description: 'Telemetry signal degraded.', evolutionChainUrl: null };
+      return { japaneseName: '', genus: 'Pokémon', description: 'Telemetry signal degraded.', evolutionChainUrl: null, varieties: [] };
     }
+  }
+
+  /**
+   * Parse species varieties and classify into Standard, Mega, Gigantamax, Regional, or Special
+   */
+  parseVarieties(rawVarieties, baseName = '') {
+    if (!rawVarieties || rawVarieties.length === 0) return [];
+
+    const varieties = [];
+
+    rawVarieties.forEach(v => {
+      const slug = v.pokemon.name;
+      const url = v.pokemon.url;
+      const match = url.match(/\/pokemon\/(\d+)\//);
+      const varietyId = match ? parseInt(match[1], 10) : null;
+
+      let name = 'Standard Form';
+      let shortName = 'Standard';
+      let formType = 'default';
+      let typeBadge = 'DEFAULT';
+
+      if (!v.is_default) {
+        if (slug.includes('-mega-x')) {
+          name = 'Mega Evolution X';
+          shortName = 'Mega X';
+          formType = 'mega';
+          typeBadge = 'MEGA';
+        } else if (slug.includes('-mega-y')) {
+          name = 'Mega Evolution Y';
+          shortName = 'Mega Y';
+          formType = 'mega';
+          typeBadge = 'MEGA';
+        } else if (slug.includes('-mega')) {
+          name = 'Mega Evolution';
+          shortName = 'Mega';
+          formType = 'mega';
+          typeBadge = 'MEGA';
+        } else if (slug.includes('-gmax')) {
+          name = 'Gigantamax Form';
+          shortName = 'Gigantamax';
+          formType = 'gmax';
+          typeBadge = 'G-MAX';
+        } else if (slug.includes('-alola')) {
+          name = 'Alolan Form';
+          shortName = 'Alolan';
+          formType = 'alola';
+          typeBadge = 'ALOLAN';
+        } else if (slug.includes('-galar')) {
+          name = 'Galarian Form';
+          shortName = 'Galarian';
+          formType = 'galar';
+          typeBadge = 'GALAR';
+        } else if (slug.includes('-hisui')) {
+          name = 'Hisuian Form';
+          shortName = 'Hisuian';
+          formType = 'hisui';
+          typeBadge = 'HISUI';
+        } else if (slug.includes('-paldea')) {
+          name = 'Paldean Form';
+          shortName = 'Paldean';
+          formType = 'paldea';
+          typeBadge = 'PALDEA';
+        } else if (slug.includes('-primal')) {
+          name = 'Primal Reversion';
+          shortName = 'Primal';
+          formType = 'special';
+          typeBadge = 'PRIMAL';
+        } else if (slug.includes('-origin')) {
+          name = 'Origin Forme';
+          shortName = 'Origin';
+          formType = 'special';
+          typeBadge = 'ORIGIN';
+        } else if (slug.includes('-therian')) {
+          name = 'Therian Forme';
+          shortName = 'Therian';
+          formType = 'special';
+          typeBadge = 'THERIAN';
+        } else if (slug.includes('-crowned')) {
+          name = 'Crowned Form';
+          shortName = 'Crowned';
+          formType = 'special';
+          typeBadge = 'CROWNED';
+        } else {
+          const parts = slug.split('-');
+          const formWords = parts.slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+          if (formWords.length > 0) {
+            shortName = formWords.join(' ');
+            name = `${formWords.join(' ')} Form`;
+            typeBadge = formWords[0].toUpperCase();
+            formType = 'special';
+          }
+        }
+      }
+
+      varieties.push({
+        id: varietyId,
+        slug,
+        name,
+        shortName,
+        formType,
+        typeBadge,
+        isDefault: v.is_default,
+        url
+      });
+    });
+
+    // Filter to meaningful battle varieties (Standard, Mega, G-Max, Regional, Primal, Special)
+    const filtered = varieties.filter(v => 
+      v.isDefault || 
+      ['mega', 'gmax', 'alola', 'galar', 'hisui', 'paldea', 'special'].includes(v.formType)
+    );
+
+    return filtered.length > 0 ? filtered : varieties;
+  }
+
+  /**
+   * Fetch complete data for an alternative Pokémon variety (Mega, G-Max, Regional)
+   */
+  async getFormDetails(variety) {
+    if (!variety || !variety.url) return null;
+    const cacheKey = `poke_form_${variety.slug || variety.id}`;
+    const raw = await this.fetchWithCache(variety.url, cacheKey);
+    const numId = raw.id;
+
+    const types = raw.types.map(t => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1));
+
+    const statsMap = {};
+    raw.stats.forEach(s => {
+      const name = s.stat.name;
+      if (name === 'hp') statsMap.hp = s.base_stat;
+      else if (name === 'attack') statsMap.attack = s.base_stat;
+      else if (name === 'defense') statsMap.defense = s.base_stat;
+      else if (name === 'special-attack') statsMap.spAtk = s.base_stat;
+      else if (name === 'special-defense') statsMap.spDef = s.base_stat;
+      else if (name === 'speed') statsMap.speed = s.base_stat;
+    });
+
+    const sprites = {
+      officialArtwork: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${numId}.png`,
+      officialArtworkShiny: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${numId}.png`,
+      home3D: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${numId}.png`,
+      home3DShiny: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/${numId}.png`,
+      showdownAnimated: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${numId}.gif`,
+      showdownAnimatedShiny: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${numId}.gif`,
+      pixelFront: raw.sprites?.front_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${numId}.png`,
+      pixelShiny: raw.sprites?.front_shiny || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${numId}.png`
+    };
+
+    return {
+      id: numId,
+      slug: raw.name,
+      name: variety.name,
+      shortName: variety.shortName,
+      formType: variety.formType,
+      typeBadge: variety.typeBadge,
+      isDefault: variety.isDefault,
+      types,
+      stats: statsMap,
+      height: `${(raw.height / 10).toFixed(1)} m`,
+      weight: `${(raw.weight / 10).toFixed(1)} kg`,
+      sprites
+    };
   }
 
   /**

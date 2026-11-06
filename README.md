@@ -42,18 +42,29 @@ A hyper-premium, interactive Pokédex application featuring a **Top Navigation B
 ### 3. Detailed Inspection View (`DetailModal.js`)
 - **Header**: National ID, Pokémon name, Japanese Kanji/Katakana name, species category ("Mouse Pokémon"), Height, Weight, Era/Generation, Type badges, Next/Previous Pokémon buttons, and Close (`ESC`).
 - **Visualizer Stage**:
-  - `[ 🖼️ SPRITES & ARTWORK ]`: Official Sugimori Artwork, 3D Pokémon HOME CGI Render, Animated Showdown GIF, with Shiny Variant Toggle! Unobstructed, high-clearance image framing with low-profile bottom mode selector.
+  - `[ 🖼️ SPRITES & ARTWORK ]`: Official Sugimori Artwork, 3D Pokémon HOME CGI Render, Animated Showdown GIF, with **Shiny Variant Toggle** and **Alternative Forms Toggle**!
+  - **Alternative Forms Toggle (`ImageViewport.js`)**: Located right next to the Shiny button. Allows instant switching between **Mega Evolutions** (Mega X, Mega Y), **Gigantamax (G-Max)**, and **Regional Forms** (Alolan, Galarian, Hisuian, Paldean) if the Pokémon has them, dynamically re-rendering artwork, CGI renders, typings, stats, and battle weaknesses!
   - `[ 🌐 3D MODEL ]`: Realistic Three.js WebGL canvas with OrbitControls, PBR physical materials (`MeshPhysicalMaterial`), clearcoat, soft shadows, lighting presets, wireframe mode, and idle animations.
 - **Synchronized Evolution Tree (`EvolutionTree.js`)**:
   - Live PokéAPI artwork thumbnails with evolution triggers (Level 16, Thunder Stone, Friendship, Trade).
-  - **Light Mode Fixed**: Selected active node has a clean soft sky-blue card (`#e0f2fe`) with high-contrast, bold navy text (`#0c4a6e`) and blue `#ID` (`#0284c7`), fully visible and perfectly matching the light theme.
+  - Selected active node has a clean soft sky-blue card (`#e0f2fe`) with high-contrast, bold navy text (`#0c4a6e`) and blue `#ID` (`#0284c7`), fully visible across dark and light themes.
   - Clicking any evolution stage seamlessly morphs the detailed view to that Pokémon!
 - **All-Generations Historical Sprite Archive (`GenerationSpriteArchive.js`)**:
   - Interactive timeline showing how that Pokémon looked from Gen 1 (1996) through Gen 9 (2022) with game titles, console hardware, and historical notes.
-- **Base Telemetry Stats & Moves (`DetailsPanel.js`)**:
-  - Animated progress bars for HP, Attack, Defense, Sp. Atk, Sp. Def, Speed and total BST.
-  - Official Pokédex lore entry text.
-  - Special Abilities and signature combat moves table.
+- **Stat Visualization Engine (`DetailsPanel.js`)**:
+  - **Animated Horizontal Progress Bars**: HP, Attack, Defense, Sp. Atk, Sp. Def, and Speed.
+  - **Dynamic Strength Color-Coding**: Green/Cyan for high stats, Amber for average stats, Red for low stats with rating badges (`SUPERB`, `HIGH`, `GOOD`, `AVG`, `LOW`) and total BST tier rating.
+- **Weakness & Resistance Chart / Type Effectiveness Matrix (`DetailsPanel.js`)**:
+  - Canonical Generation 6+ full 18-type damage effectiveness matrix.
+  - Displays **4× Ultra Weaknesses**, **2× Weaknesses**, **0× Immunities**, **½× and ¼× Resistances**, plus a compact full **18-Type Matchup Grid** for quick battle reference!
+- **Pokédex Lore & Moves (`DetailsPanel.js`)**:
+  - Official Pokédex lore entry text, special abilities, and signature combat moves table.
+
+---
+
+## 📋 Features Catalog & Tracking
+
+A complete list of all 12 project features, architectural details, and tracking statuses is documented in [FEATURES.md](./FEATURES.md).
 
 ---
 
