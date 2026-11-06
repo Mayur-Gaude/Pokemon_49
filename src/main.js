@@ -15,7 +15,7 @@ class App {
     this.currentGenId = 1;
     this.currentPokemonList = [];
     this.searchQuery = '';
-    this.selectedType = 'ALL';
+    this.selectedTypes = [];
 
     // Theme state (Dark or Light)
     this.currentTheme = localStorage.getItem('pokedex_theme') || 'dark';
@@ -38,13 +38,13 @@ class App {
       this.openPokemonDetails(numId);
     });
 
-    // 3. Initialize Pokemon Card Grid
+    // 3. Initialize Pokemon Card Grid (with Infinite Scroll)
     const gridContainer = document.getElementById('pokemon-grid-container');
     this.cardGrid = new PokemonCardGrid(gridContainer, (numId) => {
       this.openPokemonDetails(numId);
     });
 
-    // 4. Initialize Top Navbar with Theme Toggle
+    // 4. Initialize Top Navbar with Dual-Type Filter & Search Auto-Suggest
     const navbarContainer = document.getElementById('navbar-container');
     this.topNavbar = new TopNavbar(navbarContainer, {
       currentTheme: this.currentTheme,
@@ -53,9 +53,12 @@ class App {
         this.searchQuery = query;
         this.applyCurrentFilters();
       },
-      onSelectType: async (type) => {
-        this.selectedType = type;
+      onSelectTypes: async (types) => {
+        this.selectedTypes = types;
         await this.applyCurrentFilters();
+      },
+      onSelectPokemon: (numId) => {
+        this.openPokemonDetails(numId);
       },
       onToggleTheme: (newTheme) => {
         this.applyTheme(newTheme);
@@ -64,6 +67,13 @@ class App {
 
     // 5. Initial Load: Generation 1 (Kanto 1-151)
     await this.loadGeneration(1);
+
+    // 6. Preload Master Index for instant global auto-suggest & typo matching
+    pokeApiClient.getAllPokemonIndex().then(allIndex => {
+      if (this.topNavbar) {
+        this.topNavbar.setAllPokemonIndex(allIndex);
+      }
+    });
   }
 
   applyTheme(theme) {
@@ -84,13 +94,31 @@ class App {
   }
 
   async applyCurrentFilters() {
-    if (!this.selectedType || this.selectedType === 'ALL') {
-      this.cardGrid.setFilters(this.searchQuery, 'ALL', null);
-    } else {
+    if (!this.selectedTypes || this.selectedTypes.length === 0) {
+      this.cardGrid.setFilters(this.searchQuery, [], null);
+    } else if (this.selectedTypes.length === 1) {
       this.cardGrid.setLoading(true);
-      const typeSet = await pokeApiClient.getPokemonNamesByType(this.selectedType);
+      const typeSet = await pokeApiClient.getPokemonNamesByType(this.selectedTypes[0]);
       this.cardGrid.setLoading(false);
-      this.cardGrid.setFilters(this.searchQuery, this.selectedType, typeSet);
+      this.cardGrid.setFilters(this.searchQuery, this.selectedTypes, typeSet);
+    } else {
+      // Dual-type filtering: compute intersection of both type sets (Feature 2)
+      this.cardGrid.setLoading(true);
+      const [set1, set2] = await Promise.all([
+        pokeApiClient.getPokemonNamesByType(this.selectedTypes[0]),
+        pokeApiClient.getPokemonNamesByType(this.selectedTypes[1])
+      ]);
+      this.cardGrid.setLoading(false);
+
+      const dualSet = new Set();
+      if (set1 && set2) {
+        set1.forEach(name => {
+          if (set2.has(name)) {
+            dualSet.add(name);
+          }
+        });
+      }
+      this.cardGrid.setFilters(this.searchQuery, this.selectedTypes, dualSet);
     }
   }
 

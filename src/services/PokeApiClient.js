@@ -49,6 +49,33 @@ class PokeApiClient {
   }
 
   /**
+   * Fetch full master index of all 1025 Pokemon for instant search auto-suggest & typo matching
+   */
+  async getAllPokemonIndex() {
+    const url = `${this.baseUrl}/pokemon?limit=1025&offset=0`;
+    try {
+      const data = await this.fetchWithCache(url, 'poke_all_1025_index');
+      return data.results.map((item, index) => {
+        const id = index + 1;
+        const formattedId = String(id).padStart(4, '0');
+        const genObj = GENERATIONS.find(g => id >= g.range[0] && id <= g.range[1]) || GENERATIONS[0];
+        return {
+          id: formattedId,
+          numId: id,
+          name: item.name.charAt(0).toUpperCase() + item.name.slice(1),
+          thumbUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+          generation: genObj.id,
+          genName: genObj.name,
+          region: genObj.region
+        };
+      });
+    } catch (e) {
+      console.warn('Failed to load all Pokemon index for search:', e);
+      return [];
+    }
+  }
+
+  /**
    * Fetch full list of Pokémon for a specific generation
    */
   async getPokemonByGeneration(genId = 1) {
